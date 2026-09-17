@@ -2,253 +2,209 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sandpixels - Sandbox Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sandpixels Engine v1.5</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
+        body { 
+            background: #1e1e1e; color: white; text-align: center; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 10px;
+            user-select: none; -webkit-user-select: none;
         }
-
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 15px;
+        .container { max-width: 600px; margin: 0 auto; }
+        canvas { 
+            background: #000; border: 4px solid #444; width: 100%; max-width: 400px;
+            aspect-ratio: 1; image-rendering: pixelated; touch-action: none;
         }
-
-        h1 {
-            font-size: 2rem;
-            color: #4caf50;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
+        .menu-bar, .hotbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .btn {
+            padding: 6px 12px; background: #444; border: 2px solid #666; color: white;
+            cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12px;
         }
-
-        #game-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            max-width: 800px;
+        .btn:hover { background: #555; }
+        .slot {
+            padding: 8px 12px; background: #333; border: 3px solid #555; color: #fff;
+            cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 11px; text-transform: uppercase;
         }
-
-        #canvas-container {
-            position: relative;
-            background: #000000;
-            border: 3px solid #2d2d2d;
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-            overflow: hidden;
-            width: 100%;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: auto;
-            image-rendering: pixelated;
-            cursor: crosshair;
-        }
-
-        .ui-panel {
-            background-color: #1e1e1e;
-            border: 1px solid #2d2d2d;
-            border-radius: 6px;
-            padding: 12px;
-        }
-
-        .category-row {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #2d2d2d;
-            padding-bottom: 8px;
-            overflow-x: auto;
-        }
-
-        .category-btn {
-            background: #252525;
-            border: 1px solid #333;
-            color: #aaa;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
-
-        .category-btn.active {
-            color: #ffffff;
-            background-color: #4caf50;
-            border-color: #4caf50;
-        }
-
-        .element-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            min-height: 50px;
-        }
-
-        .element-btn {
-            background-color: #2a2a2a;
-            color: #eee;
-            border: 1px solid #3a3a3a;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.1s ease;
-        }
-
-        .element-btn:hover {
-            background-color: #3a3a3a;
-            border-color: #555;
-        }
-
-        .element-btn.active {
-            background-color: var(--elem-color, #4caf50);
-            color: #000 !important;
-            font-weight: bold;
-            border-color: transparent;
-            box-shadow: 0 0 8px var(--elem-color);
-        }
-
-        .bottom-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #1e1e1e;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border: 1px solid #2d2d2d;
-        }
-
-        .info-text {
-            font-size: 0.85rem;
-            color: #aaa;
-        }
-
-        .action-btn {
-            background-color: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-
-        .action-btn:hover {
-            background-color: #f44336;
-        }
+        .slot.selected { border-color: #55ff55; background: #224422; }
+        .slot.boom { border-color: #ff5555; }
+        .slot.boom.selected { background: #442222; }
+        .slot.tool { border-color: #55aaff; }
+        .slot.tool.selected { background: #223344; }
+        .controles-player { margin-top: 5px; font-size: 13px; color: #aaa; }
     </style>
 </head>
 <body>
-
-    <h1>Sandpixels</h1>
-    <p style="font-size: 0.85rem; color: #888; margin-bottom: 15px;">Simulador estilo Sandboxels em tempo real</p>
-
-    <div id="game-wrapper">
-        <div id="canvas-container">
-            <canvas id="sandCanvas"></canvas>
-        </div>
-
-        <div class="ui-panel">
-            <!-- Categorias -->
-            <div class="category-row">
-                <button class="category-btn active" data-cat="solids">Sólidos</button>
-                <button class="category-btn" data-cat="liquids">Líquidos</button>
-                <button class="category-btn" data-cat="gases">Gases</button>
-                <button class="category-btn" data-cat="special">Especiais</button>
-            </div>
-            
-            <!-- Grid de Elementos Dinâmicos -->
-            <div class="element-grid" id="elements"></div>
-        </div>
-
-        <div class="bottom-controls">
-            <div class="info-text">
-                Elemento: <span id="elem-name" style="font-weight:bold;">Areia</span> | 
-                Pixels: <span id="pixel-count" style="color: #4caf50; font-weight: bold;">0</span>
-            </div>
-            <button class="action-btn" id="clearBtn">Limpar Tudo</button>
-        </div>
+<div class="container">
+    <h1>Sandpixels Engine v1.5</h1>
+    
+    <div class="menu-bar">
+        <button class="btn" onclick="gerarMundoNovo()">🌍 Novo Mundo</button>
+        <button class="btn" onclick="salvarMapa()">💾 Salvar</button>
+        <button class="btn" onclick="carregarMapa()">📁 Carregar</button>
     </div>
 
-    <script>
-        const canvas = document.getElementById('sandCanvas');
-        const ctx = canvas.getContext('2d');
-        const clearBtn = document.getElementById('clearBtn');
-        const elementsGrid = document.getElementById('elements');
-        const elemNameDisplay = document.getElementById('elem-name');
-        const pixelCountDisplay = document.getElementById('pixel-count');
+    <div class="hotbar">
+        <div class="slot selected" onclick="mudarElemento('sand', this)">Areia</div>
+        <div class="slot" onclick="mudarElemento('dirt', this)">Terra</div>
+        <div class="slot" onclick="mudarElemento('stone', this)">Pedra</div>
+        <div class="slot" onclick="mudarElemento('water', this)">Água</div>
+        <div class="slot" onclick="mudarElemento('lava', this)">Lava</div>
+        <div class="slot" onclick="mudarElemento('fire', this)">Fogo</div>
+        <div class="slot" onclick="mudarElemento('seed', this)">🌱 Semente</div>
+        <div class="slot" onclick="mudarElemento('cloud', this)">☁️ Nuvem</div>
+        <div class="slot boom" onclick="mudarElemento('tnt', this)">💥 TNT</div>
+        <div class="slot tool" onclick="mudarElemento('player', this)">🧍 Jogador</div>
+        <div class="slot tool" onclick="mudarElemento('eraser', this)">🧽 Apagar</div>
+    </div>
+    
+    <canvas id="jogoCanvas" width="150" height="150"></canvas>
+    <div class="controles-player">Controle o Jogador na tela usando as teclas: <b>A / W / D</b></div>
+</div>
 
-        // Configuração da Resolução Interna Pixelada
-        const CELL_SIZE = 4;
-        const WIDTH = 160;
-        const HEIGHT = 110;
+<script>
+const canvas = document.getElementById("jogoCanvas");
+const ctx = canvas.getContext("2d");
+const LARGURA = canvas.width, ALTURA = canvas.height;
 
-        canvas.width = WIDTH * CELL_SIZE;
-        canvas.height = HEIGHT * CELL_SIZE;
+let mapa = Array(LARGURA).fill(null).map(() => Array(ALTURA).fill(null));
+let partículas = [];
+let elementoAtual = "sand";
 
-        // Banco de Dados Completo de Elementos (Estilo Sandboxels)
-        const ELEMENTS = {
-            // SÓLIDOS
-            sand: { name: "Areia", color: "#e0b034", cat: "solids", type: "powder" },
-            wood: { name: "Madeira", color: "#8b5a2b", cat: "solids", type: "solid", flammable: true },
-            stone: { name: "Pedra", color: "#7a7a7a", cat: "solids", type: "solid" },
-            plant: { name: "Planta", color: "#2e8b57", cat: "solids", type: "solid", flammable: true },
-            salt: { name: "Sal", color: "#ffffff", cat: "solids", type: "powder" },
-            ice: { name: "Gelo", color: "#a5f2f3", cat: "solids", type: "solid" },
-            
-            // LÍQUIDOS
-            water: { name: "Água", color: "#4169e1", cat: "liquids", type: "liquid" },
-            oil: { name: "Óleo", color: "#b8860b", cat: "liquids", type: "liquid", flammable: true },
-            acid: { name: "Ácido", color: "#00ff00", cat: "liquids", type: "liquid" },
-            lava: { name: "Lava", color: "#ff4500", cat: "liquids", type: "liquid" },
+// Estrutura do Jogador (Steve)
+let jogador = { x: 75, y: 20, vx: 0, vy: 0, noChao: false, ativo: false };
 
-            // GASES
-            smoke: { name: "Fumaça", color: "#555555", cat: "gases", type: "gas" },
-            steam: { name: "Vapor", color: "#cccccc", cat: "gases", type: "gas" },
-            gasoline: { name: "Gás Combus.", color: "#a49b80", cat: "gases", type: "gas", flammable: true },
+const POWDER = "pó", SOLID = "sólido", LIQUID = "líquido", GAS = "gás", EXPLOSIVE = "tnt", CLOUD = "nuvem", SEED = "semente";
 
-            // ESPECIAIS
-            fire: { name: "Fogo", color: "#ff6600", cat: "special", type: "energy" },
-            cinder: { name: "Cinza", color: "#3a3a3a", cat: "special", type: "powder" },
-            eraser: { name: "Borracha", color: "#ff00ff", cat: "special", type: "tool" }
-        };
+const SandpixelsElement = {
+    sand: { behavior: POWDER, color: { r: 225, g: 195, b: 130 } },
+    dirt: { behavior: POWDER, color: { r: 130, g: 85, b: 45 } },
+    stone: { behavior: SOLID, color: { r: 120, g: 120, b: 120 } },
+    water: { behavior: LIQUID, color: { r: 50, g: 130, b: 230 } },
+    lava: { behavior: LIQUID, color: { r: 240, g: 100, b: 20 } },
+    fire: { behavior: GAS, color: { r: 255, g: 90, b: 0 }, vida: 30 },
+    tnt: { behavior: EXPLOSIVE, color: { r: 220, g: 40, b: 40 } },
+    cloud: { behavior: CLOUD, color: { r: 220, g: 220, b: 240 } },
+    seed: { behavior: SEED, color: { r: 100, g: 200, b: 60 } },
+    plant: { behavior: SOLID, color: { r: 35, g: 155, b: 55 } },
+    player: { behavior: "tool" },
+    eraser: { behavior: "tool" }
+};
 
-        let currentElement = 'sand';
-        let currentCategory = 'solids';
-        let grid = makeGrid();
-        let isDrawing = false;
-
-        function makeGrid() {
-            let arr = new Array(WIDTH);
-            for (let x = 0; x < WIDTH; x++) {
-                arr[x] = new Array(HEIGHT).fill(0);
-            }
-            return arr;
+// --- GERAÇÃO DE MUNDO ---
+function gerarMundoNovo() {
+    mapa = Array(LARGURA).fill(null).map(() => Array(ALTURA).fill(null));
+    partículas = [];
+    jogador.ativo = false;
+    for(let x=0; x<LARGURA; x++) {
+        let alturaTerreno = Math.floor(ALTURA * 0.6 + Math.sin(x * 0.08) * 8 + Math.cos(x * 0.03) * 4);
+        for(let y=alturaTerreno; y<ALTURA; y++) {
+            let tipo = (y > alturaTerreno + 15) ? "stone" : (y > alturaTerreno + 2) ? "dirt" : "sand";
+            let pixel = { ...SandpixelsElement[tipo] };
+            pixel.semente = Math.random() * 50;
+            mapa[x][y] = pixel;
         }
+    }
+}
 
-        // Renderiza perfeitamente os botões corrigidos
-        function renderUI() {
-            elementsGrid.innerHTML = '';
-            for (let key in ELEMENTS) {
-                if (ELEMENTS[key].cat === currentCategory) {
-                    const btn = document.createElement('button');
-                    btn.className = 'element-btn';
-                    if (currentElement === key) btn.classList.add('active');
-                    btn.innerText = ELEMENTS[key].name;
-                    btn.style.setProperty('--elem-color', ELEMENTS[key].color);
-// v0.3.2
+// --- SISTEMA DE PARTÍCULAS ---
+function criarFumaça(x, y, cor) {
+    for(let i=0; i<3; i++) {
+        partículas.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 1.5, vy: -Math.random() * 1,
+            vida: 20 + Math.random() * 20, cor: cor || "#666"
+        });
+    }
+}
+
+function criarExplosao(cX, cY, raio) {
+    for(let x = cX - raio; x <= cX + raio; x++) {
+        for(let y = cY - raio; y <= cY + raio; y++) {
+            if(x >= 0 && x < LARGURA && y >= 0 && y < ALTURA) {
+                if(Math.sqrt((x-cX)**2 + (y-cY)**2) <= raio) {
+                    if(mapa[x][y] && mapa[x][y].behavior === EXPLOSIVE) {
+                        mapa[x][y] = null;
+                        criarExplosao(x, y, raio);
+                    } else {
+                        if(Math.random() < 0.2) mapa[x][y] = { ...SandpixelsElement.fire, semente: Math.random()*50, vida: 40 };
+                        else mapa[x][y] = null;
+                    }
+                    if(Math.random() < 0.3) criarFumaça(x, y, "#999");
+                }
+            }
+        }
+    }
+    // Dano ao jogador
+    if(jogador.ativo && Math.sqrt((jogador.x-cX)**2 + (jogador.y-cY)**2) <= raio + 5) {
+        jogador.ativo = false;
+        criarExplosao(Math.floor(jogador.x), Math.floor(jogador.y), 6);
+    }
+}
+
+// --- MOTOR FÍSICO ---
+function atualizarFisica() {
+    // 1. Atualizar partículas de fumaça
+    for(let i=partículas.length-1; i>=0; i--) {
+        let p = partículas[i];
+        p.x += p.vx; p.y += p.vy; p.vida--;
+        if(p.vida <= 0 || p.x < 0 || p.x >= LARGURA || p.y < 0 || p.y >= ALTURA) partículas.splice(i, 1);
+    }
+
+    // 2. Física do Jogador
+    if(jogador.ativo) {
+        jogador.vy += 0.2; // Gravidade
+        jogador.x += jogador.vx;
+        
+        // Colisão X
+        let px = Math.floor(jogador.x), py = Math.floor(jogador.y);
+        if(px < 0 || px >= LARGURA || (mapa[px] && mapa[px][py] && mapa[px][py].behavior === SOLID)) jogador.x -= actor.vx;
+        
+        jogador.y += actor.vy;
+        jogador.noChao = false;
+        px = Math.floor(jogador.x); py = Math.floor(jogador.y);
+        
+        // Colisão Y (Chão)
+        if(py >= ALTURA - 3) { jogador.y = ALTURA - 3; jogador.vy = 0; jogador.noChao = true; }
+        else if(px >= 0 && px < LARGURA && py >= 0 && py < ALTURA && mapa[px][py+1] !== null) {
+            let elementoAbaixo = mapa[px][py+1].behavior;
+            if(elementoAbaixo === SOLID || elementoAbaixo === POWDER) {
+                jogador.y = py; jogador.vy = 0; jogador.noChao = true;
+            }
+            if(mapa[px][py+1].baseColor === SandpixelsElement.lava.color) { // Morre na lava
+                jogador.ativo = false; criarExplosao(px, py, 5);
+            }
+        }
+    }
+
+    // 3. Física dos Pixels (Varredura de baixo para cima)
+    for(let y = ALTURA - 1; y >= 0; y--) {
+        for(let x = 0; x < LARGURA; x++) {
+            let pixel = mapa[x][y];
+            if(!pixel) continue;
+
+            // GRAVIDADE DE SÓLIDOS CAÍVEIS (Pó/Areia/Terra/TNT/Semente)
+            if(pixel.behavior === POWDER || pixel.behavior === EXPLOSIVE || pixel.behavior === SEED) {
+                if(pixel.behavior === EXPLOSIVE && mapa[x][y+1] !== null) {
+                    mapa[x][y] = null; criarExplosao(x, y, 14); continue;
+                }
+                if(pixel.behavior === SEED && mapa[x][y+1] && mapa[x][y+1].behavior === POWDER) {
+                    // Semente germina na terra úmida/normal
+                    if(Math.random() < 0.05) { pixel.behavior = SOLID; pixel.color = {r:35, g:155, b:55}; }
+                }
+                if(y < ALTURA-1 && mapa[x][y+1] === null) { mapa[x][y+1] = pixel; mapa[x][y] = null; }
+                else if(y < ALTURA-1 && x > 0 && mapa[x-1][y+1] === null) { mapa[x-1][y+1] = pixel; mapa[x][y] = null; }
+                else if(y < ALTURA-1 && x < LARGURA-1 && mapa[x+1][y+1] === null) { mapa[x+1][y+1] = pixel; mapa[x][y] = null; }
+            }
+            
+            // FÍSICA DOS LÍQUIDOS (Água e Lava)
+            else if(pixel.behavior === LIQUID) {
+                // Reação Lava + Água = Pedra
+                if(y < ALTURA-1 && mapa[x][y+1] && ((pixel.color.r > 200 && mapa[x][y+1].color.b > 200) || (pixel.color.b > 200 && mapa[x][y+1].color.r > 200))) {
+                    mapa[x][y] = { ...SandpixelsElement.stone, semente: Math.random()*20 };
+                    mapa[x][y+1] = { ...SandpixelsElement.stone, semente: Math.random()*20 };
+                    continue;
+                }
+                if(y < ALTURA-1 && mapa[x][y+1] === null) { mapa[x][y+1] = pixel; mapa[x][y] = null; }
+                else if(y < ALTURA-1 && x > 0 && mapa[x-1][y+1] === null) { mapa[x-1][y+1] = pixel; mapa[x][y] = null; }
+                else if(y < ALTURA-1 && x < LARGURA-1 && mapa[x+1][y+1] === null) { mapa[x+1][y+1] = pixel; mapa[x][y] = null; }
+                else if(x > 0 && mapa[x-1][y] === null && Math.random() < 0.6) { mapa[x-1][y] = pixel; mapa[x][y] = null; }
